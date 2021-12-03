@@ -1,7 +1,7 @@
 const canvasSketch = require('canvas-sketch');
 import {random} from "canvas-sketch-util";
 var _ = require('lodash');
-import {Pane} from 'tweakpane';
+import {Pane, SliderApi} from 'tweakpane';
 
 const settings = {
   dimensions: [ 1080, 1080 ],
@@ -12,6 +12,7 @@ const colours = ["darkmagenta", "darkorange", "Fuchsia", "lightskyblue"];
 
 
 const distance = (p1, p2) => {
+
   return Math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2);
 }
 
@@ -39,6 +40,25 @@ class Tracer {
     });
     context.stroke();
   }
+
+  update(_, x, y) {
+    context.translate(x, y);
+    const transform = context.getTransform();
+
+    const i = transform.e;
+    const j = transform.f;
+
+    this.points.push([i, j]);
+  }
+
+  finished() {
+    const l = this.points.length - 1;
+    return this.points.length > 10 && distance(this.points[0], this.points[l]) < 5;
+  }
+
+  length() {
+    return this.points.length;
+  }
 }
 
 class Spira {
@@ -48,6 +68,15 @@ class Spira {
     this.omega = omega;
     this.colour = colour;
     this.next = next;
+  }
+
+  update(t, x, y) {
+    context.translate(x, y);
+    context.rotate(t * this.omega);
+
+    if(this.next) {
+      this.next.update(t, 0, this.h);
+    }
   }
 
   draw(context, t, x, y) {
@@ -69,9 +98,29 @@ class Spira {
     
     context.restore();
   }
+
+  finished() {
+    return this.next.finished();
+  }
+
+  length() {
+    return this.next.length();
+  }
 }
 
-// const spira = new Spira(10, 100, 2.5,"red", new Spira(10, 100, 3, "green", new Tracer()));
+const period = (spira) => {
+  if(spira instanceof Tracer) {
+    return 1;
+  }
+  let greatestCommonMultiple = period(spira.next);
+  if(greatestCommonMultiple % spira.omega != 0) {
+    greatestCommonMultiple *= spira.omega;
+  }
+
+  return greatestCommonMultiple;
+}
+
+const spira = new Spira(10, 100, 2,"red", new Spira(10, 100, 3, "green", new Tracer()));
 
 const generateRandomSpira = () => {
   const _f = (n) => {
@@ -97,10 +146,19 @@ const generateRandomSpiras = (n) => {
   return spiras;
 }
 
+const finishSpira = (spira) => {
+  let time = 0;
+
+  while(!spira.finished() && spira.length < 10000) {
+
+  }
+}
+
 const spira1 = generateRandomSpira();
 const spira2 = generateRandomSpira();
 
 const spiras = generateRandomSpiras(3);
+
 
 const sketch = () => {
   return ({ context, width, height, time }) => {
@@ -110,7 +168,6 @@ const sketch = () => {
     context.fillStyle = "darkblue";
     context.fillRect(0, 0, width, height);
 
-    // ontext.filter = 'blur(10px)';
 
     spiras.forEach((s) => {
       s.draw(context, time / 2, width / 2 - 10 /2, height / 2);
