@@ -5,10 +5,13 @@ import {Pane, SliderApi} from 'tweakpane';
 
 const settings = {
   dimensions: [ 1080, 1080 ],
-  animate: true,
+  // animate: true,
 };
 
-const colours = ["darkmagenta", "darkorange", "Fuchsia", "lightskyblue"];
+const colours = [
+  // "lime", "darkorange",
+  // "Fuchsia",
+  "lightskyblue"];
 
 
 const distance = (p1, p2) => {
@@ -23,15 +26,6 @@ class Tracer {
   }
 
   draw(context, _, x, y) {
-    context.translate(x, y);
-    const transform = context.getTransform();
-
-    const i = transform.e;
-    const j = transform.f;
-
-    this.points.push([i, j]);
-
-    context.resetTransform();
     context.beginPath();
     context.strokeStyle = this.colour;
     context.lineWidth = 3;
@@ -41,7 +35,7 @@ class Tracer {
     context.stroke();
   }
 
-  update(_, x, y) {
+  update(context, _, x, y) {
     context.translate(x, y);
     const transform = context.getTransform();
 
@@ -70,33 +64,22 @@ class Spira {
     this.next = next;
   }
 
-  update(t, x, y) {
-    context.translate(x, y);
-    context.rotate(t * this.omega);
-
-    if(this.next) {
-      this.next.update(t, 0, this.h);
-    }
-  }
-
-  draw(context, t, x, y) {
-
+  update(context, t, x, y) {
     context.save();
-    context.fillStyle = this.colour;
-
     context.translate(x, y);
     context.rotate(t * this.omega);
 
-    //context.beginPath();
-    //context.rect(0, 0, this.w, this.h);
-    //context.fill();
-
-
     if(this.next) {
-      this.next.draw(context, t, 0, this.h);
+      this.next.update(context, t, 0, this.h);
     }
     
     context.restore();
+  }
+
+  draw(context, t, x, y) {
+    if(this.next) {
+      this.next.draw(context, t, 0, this.h);
+    }
   }
 
   finished() {
@@ -118,6 +101,14 @@ const period = (spira) => {
   }
 
   return greatestCommonMultiple;
+}
+
+const calcHeight = (spira) => {
+  if(spira instanceof Tracer) {
+    return 0;
+  }
+
+  return spira.h + calcHeight(spira.next);
 }
 
 const spira = new Spira(10, 100, 2,"red", new Spira(10, 100, 3, "green", new Tracer()));
@@ -146,32 +137,53 @@ const generateRandomSpiras = (n) => {
   return spiras;
 }
 
-const finishSpira = (spira) => {
+const finishSpira = (context, spira) => {
   let time = 0;
 
-  while(!spira.finished() && spira.length < 10000) {
-
+  while(!spira.finished() && spira.length() < 10000) {
+    spira.update(context, time, 530, 540);
+    time += 0.01;
   }
+  if(spira.finished()) {
+    console.log(spira);
+  }
+
+  return spira;
 }
 
 const spira1 = generateRandomSpira();
 const spira2 = generateRandomSpira();
 
-const spiras = generateRandomSpiras(3);
+const spiras = generateRandomSpiras(1);
 
+let finished = undefined;
 
 const sketch = () => {
   return ({ context, width, height, time }) => {
-    if(time < 0.5) {
-      return;
-    }
-    context.fillStyle = "darkblue";
+    context.fillStyle = "DarkSlateGrey";
     context.fillRect(0, 0, width, height);
 
+    if(finished === undefined) {
+      finished = _.map(spiras, (spira) => finishSpira(context, spira));
+    }
+    console.log(finished);
+    finished.forEach((spira) => spira.draw(context));
+    
 
-    spiras.forEach((s) => {
-      s.draw(context, time / 2, width / 2 - 10 /2, height / 2);
-    })
+    if(time > 0.5) {
+    //   spiras.forEach((s) => {
+    //     s.update(context, time / 2, width / 2 - 10 /2, height / 2)
+    //     s.draw(context);
+    //     s.draw(context);
+    //     s.draw(context);
+    //     s.draw(context);
+    //   })
+    // spira2.update(context, time / 2, width / 2 - 5, height / 2);
+    // spira2.draw(context);
+    }
+
+    context.font = "30px Arial";
+    context.fillText("Hello World", 10, 50); 
   };
 };
 
