@@ -5,13 +5,19 @@ import {Pane, SliderApi} from 'tweakpane';
 
 const settings = {
   dimensions: [ 1080, 1080 ],
-  // animate: true,
+  animate: true,
 };
 
 const colours = [
   // "lime", "darkorange",
-  // "Fuchsia",
+  "Fuchsia",
   "lightskyblue"];
+
+const params = {
+  time_delta: 0.01,
+  num_spiras: 1,
+  blur: 0
+}
 
 
 const distance = (p1, p2) => {
@@ -25,10 +31,14 @@ class Tracer {
     this.colour = colour;
   }
 
+  reset() {
+    this.points = [];
+  }
+
   draw(context, _, x, y) {
     context.beginPath();
     context.strokeStyle = this.colour;
-    context.lineWidth = 3;
+    context.lineWidth = 1;
     this.points.forEach((p) => {
       context.lineTo(p[0], p[1]);
     });
@@ -62,6 +72,10 @@ class Spira {
     this.omega = omega;
     this.colour = colour;
     this.next = next;
+  }
+
+  reset() {
+    this.next.reset();
   }
 
   update(context, t, x, y) {
@@ -133,19 +147,16 @@ const generateRandomSpiras = (n) => {
     spiras.push(generateRandomSpira());
   }
 
-
   return spiras;
 }
 
-const finishSpira = (context, spira) => {
+const finishSpira = (context, spira, time_delta) => {
+  spira.reset();
   let time = 0;
 
-  while(!spira.finished() && spira.length() < 10000) {
+  while(!spira.finished() && spira.length() < 2000) {
     spira.update(context, time, 530, 540);
-    time += 0.01;
-  }
-  if(spira.finished()) {
-    console.log(spira);
+    time += time_delta;
   }
 
   return spira;
@@ -154,34 +165,28 @@ const finishSpira = (context, spira) => {
 const spira1 = generateRandomSpira();
 const spira2 = generateRandomSpira();
 
-const spiras = generateRandomSpiras(1);
+const spiras = generateRandomSpiras(params.num_spiras);
 
 let finished = undefined;
 
 const sketch = () => {
   return ({ context, width, height, time }) => {
+    while(spiras.length < params.num_spiras) {
+      spiras.push(generateRandomSpira());
+    }
+    while(spiras.length > params.num_spiras) {
+      spiras.pop();
+    }
     context.fillStyle = "DarkSlateGrey";
     context.fillRect(0, 0, width, height);
 
-    if(finished === undefined) {
-      finished = _.map(spiras, (spira) => finishSpira(context, spira));
-    }
-    console.log(finished);
+
+    context.filter = `blur(${params.blur}px)`;
+
+    let time_delta = time / 1000;
+    finished = _.map(spiras, (spira) => finishSpira(context, spira, params.time_delta));
     finished.forEach((spira) => spira.draw(context));
     
-
-    if(time > 0.5) {
-    //   spiras.forEach((s) => {
-    //     s.update(context, time / 2, width / 2 - 10 /2, height / 2)
-    //     s.draw(context);
-    //     s.draw(context);
-    //     s.draw(context);
-    //     s.draw(context);
-    //   })
-    // spira2.update(context, time / 2, width / 2 - 5, height / 2);
-    // spira2.draw(context);
-    }
-
     context.font = "30px Arial";
     context.fillText("Hello World", 10, 50); 
   };
@@ -192,12 +197,12 @@ canvasSketch(sketch, settings);
 const createPane = () => {
   const pane = new Pane();
   let folder;
-  // folder = pane.addFolder({title: "Cells"})
-  // folder.addInput(params, "cells", {min: 10, max: 100, step: 1});
+  folder = pane.addFolder({title: "Drawing"})
+  folder.addInput(params, "time_delta", {min: 0.01, max: 1, step: 0.01});
+  folder.addInput(params, "num_spiras", {min:1, max: 10, step: 1});
 
-  // folder = pane.addFolder({title: "Function"})
-  // folder.addInput(params, "xTheta", {min: 0.1, max: 1080, step: 0.1});
-  // folder.addInput(params, "yTheta", {min: 0.1, max: 1080, step: 0.1});
+  folder = pane.addFolder({title: "Global"})
+  folder.addInput(params, "blur", {min: 0, max: 3, step: 0.1});
 }
 
 createPane();
