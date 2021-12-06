@@ -16,7 +16,8 @@ const colours = [
 const params = {
   time_delta: 0.01,
   num_spiras: 1,
-  blur: 0
+  blur: 0,
+  alpha: 1
 }
 
 
@@ -185,6 +186,7 @@ const sketch = () => {
 
     let time_delta = time / 1000;
     finished = _.map(spiras, (spira) => finishSpira(context, spira, params.time_delta));
+    context.globalAlpha = params.alpha
     finished.forEach((spira) => spira.draw(context));
     
     context.font = "30px Arial";
@@ -203,6 +205,7 @@ const createPane = () => {
 
   folder = pane.addFolder({title: "Global"})
   folder.addInput(params, "blur", {min: 0, max: 3, step: 0.1});
+  folder.addInput(params, "alpha", {min: 0, max: 1, step: 0.05});
 }
 
 createPane();
