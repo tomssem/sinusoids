@@ -14,12 +14,12 @@ const colours = [
   "lightskyblue"];
 
 const params = {
-  time_delta: 0.01,
-  num_spiras: 1,
+  time_delta: 0.89,
+  num_spiras: 10,
   blur: 0,
-  alpha: 1,
-  scale: 1,
-  frequency: 1
+  alpha: 0.25,
+  scale: 1.7,
+  frequency: 0.13
 }
 
 
@@ -191,6 +191,7 @@ const sketch = () => {
     context.globalAlpha = params.alpha
     finished.forEach((spira, index) => {
       context.save();
+      const scaleRandomness = random.noise2D(time, index * 10, params.frequency);
       const scale = params.scale * (random.noise2D(time, index * 10, params.frequency) + 1) / 2
       const rotation = random.noise2D(index * 10, time, params.frequency) * Math.PI;
       context.scale(scale, scale);
@@ -198,6 +199,9 @@ const sketch = () => {
       context.rotate(rotation);
       spira.draw(context)
       context.restore();
+      if(scaleRandomness < -0.7) {
+        spiras[index]= generateRandomSpira();
+      }
     });
   };
 };
