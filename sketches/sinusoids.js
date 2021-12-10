@@ -17,7 +17,9 @@ const params = {
   time_delta: 0.01,
   num_spiras: 1,
   blur: 0,
-  alpha: 1
+  alpha: 1,
+  scale: 1,
+  frequency: 1
 }
 
 
@@ -39,7 +41,7 @@ class Tracer {
   draw(context, _, x, y) {
     context.beginPath();
     context.strokeStyle = this.colour;
-    context.lineWidth = 1;
+    context.lineWidth = 2;
     this.points.forEach((p) => {
       context.lineTo(p[0], p[1]);
     });
@@ -155,8 +157,8 @@ const finishSpira = (context, spira, time_delta) => {
   spira.reset();
   let time = 0;
 
-  while(!spira.finished() && spira.length() < 2000) {
-    spira.update(context, time, 530, 540);
+  while(!spira.finished() && spira.length() < 1000) {
+    spira.update(context, time, 0, 0);
     time += time_delta;
   }
 
@@ -187,10 +189,16 @@ const sketch = () => {
     let time_delta = time / 1000;
     finished = _.map(spiras, (spira) => finishSpira(context, spira, params.time_delta));
     context.globalAlpha = params.alpha
-    finished.forEach((spira) => spira.draw(context));
-    
-    context.font = "30px Arial";
-    context.fillText("Hello World", 10, 50); 
+    finished.forEach((spira, index) => {
+      context.save();
+      const scale = params.scale * (random.noise2D(time, index * 10, params.frequency) + 1) / 2
+      const rotation = random.noise2D(index * 10, time, params.frequency) * Math.PI;
+      context.scale(scale, scale);
+      context.translate(width / (2 * scale), height / (2 * scale));
+      context.rotate(rotation);
+      spira.draw(context)
+      context.restore();
+    });
   };
 };
 
@@ -206,6 +214,8 @@ const createPane = () => {
   folder = pane.addFolder({title: "Global"})
   folder.addInput(params, "blur", {min: 0, max: 3, step: 0.1});
   folder.addInput(params, "alpha", {min: 0, max: 1, step: 0.05});
+  folder.addInput(params, "scale", {min: 0, max: 3, step: 0.05});
+  folder.addInput(params, "frequency", {min: 0.000, max: 3, step: 0.01});
 }
 
 createPane();
